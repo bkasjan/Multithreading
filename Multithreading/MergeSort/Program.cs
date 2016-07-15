@@ -1,54 +1,43 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MergeSort
 {
-    public class MergeSort
-    {
-
-    }
-
-    public class ParallelMergeSort
-    {
-
-    }
-
     class Program
     {
         static void Main(string[] args)
         {
             var rand = new Random();
-            for (int i = 10; i < 1000; i*=10)
+            var mergeSorts = new MergeSorts();
+
+            for (int i = 1000; i < 10000000; i *= 10)
             {
-                int[] randomTab = Enumerable.Repeat(0, 1000 * i).Select(x => rand.Next(0, 1000)).ToArray();
+
+                Console.WriteLine($"Collection size: {i}");
+                int[] randomTab = Enumerable.Repeat(0, i).Select(x => rand.Next(0, 1000)).ToArray();
+                int[] randTabMulti = (int[])randomTab.Clone();
 
                 // Single thread
                 var startSingle = DateTime.Now;
-                var sortedSingle = MergeSort< int>(randomTab, 0, randomTab.Length);
+                //var sortedSingle = MergeSort<int>(randomTab, 0, randomTab.Length);
+                var sortedSingle = mergeSorts.MergeSort(randomTab, 0, randomTab.Length - 1);
                 var endSingle = DateTime.Now;
+                Console.WriteLine($"Single thread MergeSort: {endSingle - startSingle}");
 
                 // Multi-thread
                 var startMulti = DateTime.Now;
-                var sortedMulti = ParallelMergeSort<int>(randomTab, 0, randomTab.Length);
+                var sortedMulti = mergeSorts.ParallelMergeSort<int>(randTabMulti, 0, randTabMulti.Length);
                 var endMulti = DateTime.Now;
-
-                Console.WriteLine($"Collection size: {1000 * i}");
-                Console.WriteLine($"Single thread MergeSort: {endSingle - startSingle}");
                 Console.WriteLine($"Multi-thread MergeSort: {endMulti - startMulti}");
-
-                //foreach (var item in sortedMulti)
-                //{
-                //    Console.WriteLine($"{item} ");
-                //}
             }
 
             Console.ReadKey();
         }
-
-        static T[] MergeSort<T>(T[] input, int startIndex, int endIndex) where T : IComparable<T>
+    }
+    public class MergeSorts
+    {
+        public T[] MergeSort<T>(T[] input, int startIndex, int endIndex) where T : IComparable<T>
         {
             if (endIndex - startIndex < 2)
                 return new T[] { input[startIndex] };
@@ -62,7 +51,7 @@ namespace MergeSort
             return result;
         }
 
-        static T[] ParallelMergeSort<T>(T[] input, int startIndex, int endIndex) where T : IComparable<T>
+        public T[] ParallelMergeSort<T>(T[] input, int startIndex, int endIndex) where T : IComparable<T>
         {
             if (endIndex - startIndex < 2)
                 return new T[] { input[startIndex] };
@@ -74,12 +63,11 @@ namespace MergeSort
             T[] leftResult = taskLeft.Result;
             T[] rightResult = taskRight.Result;
 
-            //var result = Task<T[]>.Factory.StartNew(() => { return Merge(left, right); }).Result;
-            var result = Merge(leftResult, rightResult);
+            var result = ParallelMerge(leftResult, rightResult);
             return result;
         }
 
-        static T[] Merge<T>(T[] left, T[] right) where T : IComparable<T>
+        private T[] ParallelMerge<T>(T[] left, T[] right) where T : IComparable<T>
         {
             var leftIndex = 0;
             var rightIndex = 0;
@@ -105,7 +93,7 @@ namespace MergeSort
                 while (rightIndex < rightSize)
                 {
                     result[resultIndex++] = right[rightIndex++];
-                }                 
+                }
             });
 
             var taskRight = Task.Factory.StartNew(() =>
@@ -117,6 +105,36 @@ namespace MergeSort
             });
 
             Task.WaitAll(taskLeft, taskRight);
+            return result;
+        }
+
+        private T[] Merge<T>(T[] left, T[] right) where T : IComparable<T>
+        {
+            var leftIndex = 0;
+            var rightIndex = 0;
+            var resultIndex = 0;
+            var leftSize = left.Length;
+            var rightSize = right.Length;
+            T[] result = new T[leftSize + rightSize];
+
+            while (rightIndex < rightSize && leftIndex < leftSize)
+            {
+                if (left[leftIndex].CompareTo(right[rightIndex]) < 0)
+                {
+                    result[resultIndex++] = left[leftIndex++];
+                }
+                else
+                {
+                    result[resultIndex++] = right[rightIndex++];
+                }
+            }
+
+            while (rightIndex < rightSize)
+                result[resultIndex++] = right[rightIndex++];
+
+            while (leftIndex < leftSize)
+                result[resultIndex++] = left[leftIndex++];
+
             return result;
         }
     }
