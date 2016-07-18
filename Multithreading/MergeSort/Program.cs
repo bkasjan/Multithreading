@@ -63,48 +63,7 @@ namespace MergeSort
             T[] leftResult = taskLeft.Result;
             T[] rightResult = taskRight.Result;
 
-            var result = ParallelMerge(leftResult, rightResult);
-            return result;
-        }
-
-        private T[] ParallelMerge<T>(T[] left, T[] right) where T : IComparable<T>
-        {
-            var leftIndex = 0;
-            var rightIndex = 0;
-            var resultIndex = 0;
-            var leftSize = left.Length;
-            var rightSize = right.Length;
-            T[] result = new T[leftSize + rightSize];
-
-            while (rightIndex < rightSize && leftIndex < leftSize)
-            {
-                if (left[leftIndex].CompareTo(right[rightIndex]) < 0)
-                {
-                    result[resultIndex++] = left[leftIndex++];
-                }
-                else
-                {
-                    result[resultIndex++] = right[rightIndex++];
-                }
-            }
-
-            var taskLeft = Task.Factory.StartNew(() =>
-            {
-                while (rightIndex < rightSize)
-                {
-                    result[resultIndex++] = right[rightIndex++];
-                }
-            });
-
-            var taskRight = Task.Factory.StartNew(() =>
-            {
-                while (leftIndex < leftSize)
-                {
-                    result[resultIndex++] = left[leftIndex++];
-                }
-            });
-
-            Task.WaitAll(taskLeft, taskRight);
+            var result = Merge(leftResult, rightResult);
             return result;
         }
 
